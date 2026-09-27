@@ -70,6 +70,3 @@ class TipoAnimal(TipoAnimalBase):
 
     class Config:
         from_attributes = True
-
-
-
