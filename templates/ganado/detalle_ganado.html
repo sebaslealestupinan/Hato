@@ -93,7 +93,7 @@
 
         if (confirm(`¿Estás seguro de que quieres eliminar al animal ${identificacion}? Esta acción es irreversible.`)) {
             
-            const response = await fetch(`/ganado/${ganadoId}`, { method: 'DELETE' });
+            const response = await fetch(`/ganado/api/${ganadoId}`, { method: 'DELETE' });
             
             if (response.ok) {
                 feedbackEl.textContent = `✅ Animal ${identificacion} eliminado correctamente. Redirigiendo...`;
@@ -115,7 +115,7 @@
 
 {% if ganado.foto %}
     <div class="detalle-foto">
-        <img src="/{{ ganado.foto }}" alt="Foto de {{ ganado.identificacion }}">
+        <img src="{{ foto_url(ganado.foto) }}" alt="Foto de {{ ganado.identificacion }}">
     </div>
 {% else %}
     <p style="text-align:center; color:#dc3545;">No hay foto disponible</p>

@@ -1,67 +1,36 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-from fastapi import Request
 
-from database import Base, engine
-import models
-
-# Routers
-from routers import finca
-from routers import ganado
-from routers import tipo_animal
-from fastapi.staticfiles import StaticFiles
-
-
-# Crear tablas en la base de datos
-Base.metadata.create_all(bind=engine)
+import models  # noqa: F401  (registra los modelos)
+from routers import finca, ganado, tipo_animal
 
 app = FastAPI(
     title="Sistema de Gestión de Ganado",
     description="API para administrar fincas, ganado y tipos de ganado",
-    version="1.0.0"
+    version="1.0.0",
 )
 
-
 app.mount("/static", StaticFiles(directory="static"), name="static")
-
-#---Templates---
 templates = Jinja2Templates(directory="templates")
 
-#---Statics---
-app.mount("/static", StaticFiles(directory="static"), name="static")
-
-
-
-# ============================================================
-#                      CORS (opcional)
-# ============================================================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],      # En producción debes especificar dominio
+    allow_origins=["*"],  # En producción, poner el dominio real
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ============================================================
-#                    RUTAS (Routers)
-# ============================================================
 app.include_router(finca.router)
 app.include_router(ganado.router)
 app.include_router(tipo_animal.router)
 
 
-
-# ============================================================
-#                        RUTA RAÍZ
-# ============================================================
-
 @app.get("/")
 def home(request: Request):
     return templates.TemplateResponse(
         "index.html",
-        {"request": request, "mensaje": "Sistema funcionando"}
+        {"request": request, "mensaje": "Sistema funcionando"},
     )

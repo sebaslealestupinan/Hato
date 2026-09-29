@@ -1,15 +1,13 @@
-from pydantic import BaseModel
 from typing import Optional
 from datetime import date
-from fastapi import UploadFile, File
+from uuid import UUID
+from pydantic import BaseModel, ConfigDict
 
-# GanadoCreate se mantiene igual, sin la foto
 
-#------Finca----
-
+# ------ Finca ------
 class FincaBase(BaseModel):
     nombre: str
-    tamaño: int #Tamaño como entero (hectareas)
+    tamaño: float  # hectáreas
     ubicacion: str
 
 class FincaCreate(FincaBase):
@@ -17,37 +15,27 @@ class FincaCreate(FincaBase):
 
 class Finca(FincaBase):
     id: int
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
-#-------Ganado------
+# ------ Ganado ------
 class GanadoBase(BaseModel):
     identificacion: str
     nombre: Optional[str] = None
     fecha_nacimiento: date
-    edad: int
     sexo: str
     finca_id: int
-    tipo_animal_id: int     #relación con TipoAnimal
+    tipo_animal_id: int
 
 class GanadoCreate(GanadoBase):
     pass
 
 class Ganado(GanadoBase):
     id: int
-    class Config:
-        orm_mode = True
-
-class GanadoUpdate(BaseModel):
-    nombre: str | None = None
-    edad: int | None = None
-    sexo: str | None = None
-    finca_id: int | None = None
-
-    class Config:
-        orm_mode = True
-
+    codigo_publico: UUID
+    edad: Optional[int] = None       # meses, calculada
+    foto: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True)
 
 class GanadoUpdateData(BaseModel):
     identificacion: str
@@ -57,8 +45,8 @@ class GanadoUpdateData(BaseModel):
     finca_id: int
     tipo_animal_id: int
 
-#-------Tipo de Animal------
 
+# ------ Tipo de animal ------
 class TipoAnimalBase(BaseModel):
     nombre: str
 
@@ -67,6 +55,4 @@ class TipoAnimalCreate(TipoAnimalBase):
 
 class TipoAnimal(TipoAnimalBase):
     id: int
-
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

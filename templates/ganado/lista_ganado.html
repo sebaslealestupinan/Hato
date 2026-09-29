@@ -39,7 +39,7 @@
                         <td>{{ animal.sexo }}</td>
                         <td>
                             {% if animal.foto %}
-                                <img src="/{{ animal.foto }}" alt="Foto" style="width: 80px; height: 80px; object-fit: cover; border-radius: 5px;">
+                                <img src="{{ foto_url(animal.foto) }}" alt="Foto" style="width: 80px; height: 80px; object-fit: cover; border-radius: 5px;">
                             {% else %}
                                 N/A
                             {% endif %}

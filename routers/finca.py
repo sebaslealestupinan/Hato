@@ -2,6 +2,7 @@ from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from database import get_db
+from sqlalchemy.exc import IntegrityError
 import models, schemas
 
 # Inicializar Jinja2Templates
@@ -93,27 +94,21 @@ def obtener_finca_api(finca_id: int, db: Session = Depends(get_db)):
     return finca
 
 
-# Actualizar finca completa (PUT API) - URL: /fincas/{finca_id}
-#FUNCIÓN PUT PARA ACTUALIZAR LA FINCA
 @router.put("/{finca_id}", response_model=schemas.Finca)
 def actualizar_finca(finca_id: int, datos: schemas.FincaCreate, db: Session = Depends(get_db)):
-    # ... (código para buscar la finca) ...
+    finca = db.query(models.Finca).filter(models.Finca.id == finca_id).first()
+    if not finca:
+        raise HTTPException(status_code=404, detail="Finca no encontrada")
 
-    # 2. Actualizar los campos con los nuevos datos
     for key, value in datos.dict().items():
-        setattr(finca, key, value) 
+        setattr(finca, key, value)
 
-    # 3. Intentar confirmar la transacción (Persistir los cambios en la DB)
     try:
-        # 💡 CAMBIO/REFUERZO: Aseguramos que SQLAlchemy sepa que este objeto está 'dirty'
-        db.add(finca) 
-        db.commit() # Escribe los cambios a la base de datos
-    
-    except IntegrityError as e:
-        # ... (manejo de errores de unicidad) ...
+        db.commit()
+    except IntegrityError:
         db.rollback()
-        # ...
-    
+        raise HTTPException(status_code=400, detail="Datos de finca inválidos.")
+
     db.refresh(finca)
     return finca
 

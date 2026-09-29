@@ -70,6 +70,14 @@
             <div>
                 <label for="foto">Foto del Ganado:</label>
                 <input type="file" id="foto" name="foto" accept="image/*">
+
+                <div id="fotoPreviewBox" style="display:none; margin-top:10px; text-align:center;">
+                    <img id="fotoPreview" alt="Vista previa"
+                         style="max-width:220px; width:100%; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,.3);">
+                    <br>
+                    <button type="button" id="quitarFoto"
+                            style="margin-top:8px; background-color:#dc3545;">✖ Quitar foto</button>
+                </div>
             </div>
 
             <button type="submit" class="btn-submit">Registrar Ganado</button>
@@ -116,5 +124,28 @@ form.addEventListener("submit", async (e) => {
         mensajeEl.style.color = "#dc3545";
     }
 });
+
+// ---- Vista previa y botón "Quitar foto" ----
+const inputFoto = document.getElementById("foto");
+const previewBox = document.getElementById("fotoPreviewBox");
+const previewImg = document.getElementById("fotoPreview");
+
+function limpiarFoto() {
+    inputFoto.value = "";
+    if (previewImg.src.startsWith("blob:")) URL.revokeObjectURL(previewImg.src);
+    previewImg.removeAttribute("src");
+    previewBox.style.display = "none";
+}
+
+inputFoto.addEventListener("change", () => {
+    const archivo = inputFoto.files[0];
+    if (!archivo) return limpiarFoto();
+    if (previewImg.src.startsWith("blob:")) URL.revokeObjectURL(previewImg.src);
+    previewImg.src = URL.createObjectURL(archivo);
+    previewBox.style.display = "block";
+});
+
+document.getElementById("quitarFoto").addEventListener("click", limpiarFoto);
+form.addEventListener("reset", limpiarFoto);  // al registrar con éxito también se limpia la vista previa
 </script>
 {% endblock %}
