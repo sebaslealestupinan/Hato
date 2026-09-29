@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Etiqueta / Arete QR - {{ ganado.identificacion }}</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f4f6f9;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .actions-bar {
+            margin-bottom: 20px;
+        }
+        .btn-print {
+            background-color: #00cba9;
+            color: #111;
+            font-weight: bold;
+            font-size: 1.1em;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        /* Estilo de la tarjeta/etiqueta física para arete */
+        .arete-label {
+            width: 320px;
+            height: 400px;
+            background: #ffffff;
+            border: 3px solid #111;
+            border-radius: 16px;
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            text-align: center;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+            position: relative;
+        }
+
+        /* Agujero superior del arete */
+        .arete-hole {
+            width: 24px;
+            height: 24px;
+            background: #e0e0e0;
+            border: 2px solid #333;
+            border-radius: 50%;
+            position: absolute;
+            top: 10px;
+        }
+
+        .arete-header {
+            margin-top: 20px;
+        }
+
+        .arete-id {
+            font-size: 2.2em;
+            font-weight: 900;
+            color: #111;
+            letter-spacing: 1px;
+            margin: 0;
+        }
+
+        .arete-nombre {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #444;
+            margin: 2px 0 0 0;
+        }
+
+        .arete-qr {
+            width: 170px;
+            height: 170px;
+            margin: 10px 0;
+        }
+
+        .arete-details {
+            font-size: 0.9em;
+            color: #333;
+            font-weight: bold;
+            line-height: 1.4;
+            border-top: 2px dashed #ccc;
+            width: 100%;
+            padding-top: 8px;
+        }
+
+        @media print {
+            .actions-bar {
+                display: none;
+            }
+            body {
+                background: #fff;
+                padding: 0;
+            }
+            .arete-label {
+                box-shadow: none;
+                border: 2px solid #000;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="actions-bar">
+        <button class="btn-print" onclick="window.print()">🖨️ Imprimir Arete / Etiqueta</button>
+        <button onclick="window.close()" style="padding: 12px 18px; font-size: 1em; border-radius: 6px; cursor: pointer; background:#6c757d; color:#fff; border:none;">Cerrar</button>
+    </div>
+
+    <div class="arete-label">
+        <div class="arete-hole"></div>
+
+        <div class="arete-header">
+            <div class="arete-id">{{ ganado.identificacion }}</div>
+            {% if ganado.nombre %}<div class="arete-nombre">{{ ganado.nombre }}</div>{% endif %}
+        </div>
+
+        <img class="arete-qr" src="/ganado/qr/{{ ganado.codigo_publico }}" alt="QR Arete {{ ganado.identificacion }}">
+
+        <div class="arete-details">
+            <div>Finca: {{ ganado.finca.nombre }}</div>
+            <div>Sexo: {{ ganado.sexo }} | Raza: {{ ganado.raza or 'N/A' }}</div>
+            <div style="font-size: 0.8em; color: #666; font-weight: normal; margin-top: 4px;">Escanea para ver historial sanitario</div>
+        </div>
+    </div>
+
+</body>
+</html>

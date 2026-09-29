@@ -3,23 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Ficha · {{ ganado.identificacion }}</title>
+    <title>Ficha Ganadera · {{ ganado.identificacion }}</title>
     <style>
         * { box-sizing: border-box; }
-        body { margin: 0; font-family: system-ui, sans-serif; background: #0d1117; color: #e6edf3; }
+        body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background: #0d1117; color: #e6edf3; }
         .wrap { max-width: 480px; margin: 0 auto; padding: 16px; }
-        .card { background: #161b22; border-radius: 14px; padding: 18px; box-shadow: 0 4px 14px rgba(0,0,0,.4); }
-        h1 { margin: 0 0 4px; font-size: 1.5rem; color: #00cba9; }
-        .sub { margin: 0 0 14px; color: #8b949e; }
-        .foto { width: 100%; border-radius: 10px; margin-bottom: 14px; display: block; }
+        .card { background: #161b22; border-radius: 16px; padding: 20px; box-shadow: 0 6px 16px rgba(0,0,0,.5); border: 1px solid #30363d; }
+        h1 { margin: 0; font-size: 1.6rem; color: #00cba9; }
+        .sub { margin: 4px 0 14px; color: #8b949e; font-size: 1rem; }
+        .foto { width: 100%; border-radius: 12px; margin-bottom: 14px; display: block; object-fit: cover; max-height: 320px; }
         dl { margin: 0; }
-        .fila { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid #21262d; }
+        .fila { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid #21262d; }
         .fila:last-child { border-bottom: 0; }
         dt { color: #8b949e; }
         dd { margin: 0; font-weight: 600; text-align: right; }
-        h2 { font-size: 1.1rem; margin: 22px 0 8px; color: #00cba9; }
-        .evento { padding: 8px 0; border-bottom: 1px solid #21262d; }
-        .evento small { color: #8b949e; display: block; }
+        h2 { font-size: 1.15rem; margin: 22px 0 10px; color: #00cba9; border-bottom: 1px solid #30363d; padding-bottom: 6px; }
+        .evento { padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px; margin-bottom: 8px; border-left: 3px solid #00cba9; }
+        .evento small { color: #8b949e; display: block; margin-top: 2px; }
+        .badge {
+            padding: 3px 10px;
+            border-radius: 10px;
+            font-size: 0.8em;
+            font-weight: bold;
+            color: #fff;
+            display: inline-block;
+        }
+        .badge-activo { background-color: #28a745; }
+        .badge-vendido { background-color: #007bff; }
+        .badge-fallecido { background-color: #dc3545; }
+        .badge-descarte { background-color: #fd7e14; }
+        .badge-cuarentena { background-color: #ffc107; color: #212529; }
     </style>
 </head>
 <body>
@@ -29,30 +42,56 @@
             <img class="foto" src="{{ foto_url(ganado.foto) }}" alt="Foto de {{ ganado.identificacion }}">
         {% endif %}
 
-        <h1>🐂 {{ ganado.identificacion }}</h1>
-        <p class="sub">{{ ganado.nombre or 'Sin nombre' }}</p>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h1>🐂 Arete: {{ ganado.identificacion }}</h1>
+            {% if ganado.estado == 'Activo' %}
+                <span class="badge badge-activo">Activo</span>
+            {% elif ganado.estado == 'Vendido' %}
+                <span class="badge badge-vendido">Vendido</span>
+            {% elif ganado.estado == 'Fallecido' %}
+                <span class="badge badge-fallecido">Fallecido</span>
+            {% elif ganado.estado == 'Descarte' %}
+                <span class="badge badge-descarte">Descarte</span>
+            {% elif ganado.estado == 'Cuarentena' %}
+                <span class="badge badge-cuarentena">Cuarentena</span>
+            {% endif %}
+        </div>
+        
+        <p class="sub">{{ ganado.nombre or 'Sin nombre registrado' }}</p>
 
         {% set m = ganado.edad or 0 %}
         <dl>
-            <div class="fila"><dt>Tipo</dt><dd>{{ ganado.tipo_animal.nombre }}</dd></div>
+            <div class="fila"><dt>Finca</dt><dd>{{ ganado.finca.nombre }}</dd></div>
+            <div class="fila"><dt>Tipo de Animal</dt><dd>{{ ganado.tipo_animal.nombre }}</dd></div>
             <div class="fila"><dt>Sexo</dt><dd>{{ ganado.sexo }}</dd></div>
-            <div class="fila"><dt>Nacimiento</dt><dd>{{ ganado.fecha_nacimiento.strftime('%d/%m/%Y') }}</dd></div>
+            <div class="fila"><dt>Raza</dt><dd>{{ ganado.raza or 'No declarada' }}</dd></div>
+            <div class="fila"><dt>Fecha Nacimiento</dt><dd>{{ ganado.fecha_nacimiento.strftime('%d/%m/%Y') }}</dd></div>
             <div class="fila"><dt>Edad</dt>
                 <dd>
                     {% if m >= 12 %}{{ m // 12 }} año{{ 's' if m // 12 != 1 }}{% if m % 12 %} y {{ m % 12 }} mes{{ 'es' if m % 12 != 1 }}{% endif %}
                     {% else %}{{ m }} mes{{ 'es' if m != 1 }}{% endif %}
                 </dd>
             </div>
-            <div class="fila"><dt>Finca</dt><dd>{{ ganado.finca.nombre }}</dd></div>
+            <div class="fila">
+                <dt>Madre</dt>
+                <dd>{{ ganado.madre.identificacion if ganado.madre else 'Sin registro' }}</dd>
+            </div>
+            <div class="fila">
+                <dt>Padre</dt>
+                <dd>{{ ganado.padre.identificacion if ganado.padre else 'Sin registro' }}</dd>
+            </div>
         </dl>
 
         {% if ganado.eventos %}
-            <h2>Historial</h2>
-            {% for e in ganado.eventos|sort(attribute='fecha_evento', reverse=true) %}
+            <h2>💉 Historial Sanitario y Controles</h2>
+            {% for e in ganado.eventos %}
                 <div class="evento">
-                    <strong>{{ e.tipo|replace('_', ' ')|capitalize }}</strong>
-                    <small>{{ e.fecha_evento.strftime('%d/%m/%Y') }}</small>
-                    {{ e.descripcion }}
+                    <strong style="text-transform: capitalize; color: #00cba9;">{{ e.tipo }}</strong>
+                    <small>📅 Fecha: {{ e.fecha_evento.strftime('%d/%m/%Y') }}</small>
+                    <div style="margin-top: 4px;">{{ e.descripcion }}</div>
+                    {% if e.proximo_control %}
+                        <small style="color: #ffc107; font-weight: bold;">⚠️ Próximo control: {{ e.proximo_control.strftime('%d/%m/%Y') }}</small>
+                    {% endif %}
                 </div>
             {% endfor %}
         {% endif %}

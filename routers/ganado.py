@@ -414,3 +414,27 @@ def verificar_cruce_api(ganado_id: int, pareja_id: int, db: Session = Depends(ge
         "compatible": True,
         "motivo": "✅ CRUCE COMPATIBLE: No se detectaron ancestros en común (madres, padres o abuelos)."
     }
+
+
+# ============================================================
+#              VISTAS DE IMPRESIÓN DE ETIQUETAS QR
+# ============================================================
+
+@router.get("/imprimir-qr/{ganado_id}")
+async def imprimir_qr_view(ganado_id: int, request: Request, db: Session = Depends(get_db)):
+    ganado = db.query(models.Ganado).filter(models.Ganado.id == ganado_id).first()
+    if not ganado:
+        raise HTTPException(status_code=404, detail="Animal no encontrado")
+    return templates.TemplateResponse(
+        "ganado/imprimir_qr.html",
+        {"request": request, "ganado": ganado}
+    )
+
+
+@router.get("/imprimir-qr-lote")
+async def imprimir_qr_lote_view(request: Request, db: Session = Depends(get_db)):
+    ganados = db.query(models.Ganado).order_by(models.Ganado.identificacion).all()
+    return templates.TemplateResponse(
+        "ganado/imprimir_qr_lote.html",
+        {"request": request, "ganados": ganados}
+    )
