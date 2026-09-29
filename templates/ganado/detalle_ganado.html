@@ -14,22 +14,19 @@
     }
     
     .detalle-item {
-        /* Usamos la misma estructura pero forzamos el color */
         display: flex;
         justify-content: space-between;
         padding: 10px 0;
         border-bottom: 1px solid #383c45;
-        color: white; /* Esto debería aplicar el color al texto principal del ítem */
+        color: white;
     }
     .detalle-item span:first-child {
         font-weight: bold;
-        color: #b0b0b0; /* Mantiene la etiqueta en un gris claro */
+        color: #b0b0b0;
     }
-    /* Asegurar que el segundo span (el valor) sea blanco o muy claro */
     .detalle-item span:last-child { 
         color: white !important; 
     }
-    /* ... (resto de estilos) ... */
 </style>
 
 
@@ -88,7 +85,8 @@
     const eliminarBtn = document.querySelector('.btn-eliminar');
 
     eliminarBtn.addEventListener('click', async (e) => {
-        const ganadoId = e.target.getAttribute('data-id');
+        // currentTarget: funciona aunque se haga clic sobre el ícono dentro del botón
+        const ganadoId = e.currentTarget.getAttribute('data-id');
         const identificacion = document.querySelector('.card-title').textContent.replace('🐂 Detalle del Animal: ', '').trim();
 
         if (confirm(`¿Estás seguro de que quieres eliminar al animal ${identificacion}? Esta acción es irreversible.`)) {
@@ -121,6 +119,15 @@
     <p style="text-align:center; color:#dc3545;">No hay foto disponible</p>
 {% endif %}
 
+<div class="detalle-qr">
+    <h3>Código QR del animal</h3>
+    <img src="/ganado/qr/{{ ganado.codigo_publico }}" alt="QR de {{ ganado.identificacion }}" width="200" height="200">
+    <p>
+        <a href="/ganado/ficha/{{ ganado.codigo_publico }}" target="_blank">Ver ficha pública</a> ·
+        <a href="/ganado/qr/{{ ganado.codigo_publico }}" download="qr-{{ ganado.identificacion }}.png">Descargar QR</a>
+    </p>
+</div>
+
 <style>
 .detalle-foto {
     text-align: center;
@@ -128,12 +135,16 @@
 }
 
 .detalle-foto img {
-    max-width: 600px;   /* Ajusta el ancho máximo */
-    width: 100%;        /* Hace que se adapte al contenedor si es más pequeño */
-    height: auto;       /* Mantiene la proporción */
-    border-radius: 10px; /* Bordes redondeados */
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3); /* Sombra para destacar */
+    max-width: 600px;
+    width: 100%;
+    height: auto;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
 }
+
+.detalle-qr { text-align: center; margin: 20px 0; color: white; }
+.detalle-qr img { background: #fff; padding: 8px; border-radius: 8px; }
+.detalle-qr a { color: #00cba9; }
 </style>
 
 

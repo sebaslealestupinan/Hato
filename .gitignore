@@ -4,3 +4,6 @@ __pycache__/
 .venv/
 .env/
 .env
+*.db
+.idea/
+static/uploads/

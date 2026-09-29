@@ -24,6 +24,7 @@
                 <th>Finca</th>
                 <th>Sexo</th>
                 <th>Foto</th>
+                <th>QR</th>
                 <th>Acciones</th>
             </tr>
         </thead>
@@ -45,6 +46,11 @@
                             {% endif %}
                         </td>
                         <td>
+                            <a href="/ganado/ficha/{{ animal.codigo_publico }}" target="_blank" title="Abrir ficha pública">
+                                <img src="/ganado/qr/{{ animal.codigo_publico }}" alt="QR de {{ animal.identificacion }}" style="width: 60px; height: 60px; background: #fff; padding: 3px; border-radius: 5px;">
+                            </a>
+                        </td>
+                        <td>
                             <button onclick="window.location.href='/ganado/editar/{{ animal.id }}'">Editar</button>
                             <button class="btn-eliminar" data-id="{{ animal.id }}" style="background-color: #dc3545;">Eliminar</button>
                         </td>
@@ -52,7 +58,7 @@
                 {% endfor %}
             {% else %}
                 <tr>
-                    <td colspan="8" style="text-align: center;">Aún no hay ganado registrado.</td>
+                    <td colspan="9" style="text-align: center;">Aún no hay ganado registrado.</td>
                 </tr>
             {% endif %}
         </tbody>
@@ -65,8 +71,8 @@
 
         document.querySelectorAll('.btn-eliminar').forEach(button => {
             button.addEventListener('click', async (e) => {
-                const ganadoId = e.target.getAttribute('data-id');
-                const identificacion = e.target.closest('tr').querySelector('td a').textContent.trim();
+                const ganadoId = e.currentTarget.getAttribute('data-id');
+                const identificacion = e.currentTarget.closest('tr').querySelector('td a').textContent.trim();
 
                 if (confirm(`¿Estás seguro de que quieres eliminar el animal con ID/Arete: ${identificacion}?`)) {
                     const response = await fetch(`/ganado/api/${ganadoId}`, { method: 'DELETE' });

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Ficha · {{ ganado.identificacion }}</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: system-ui, sans-serif; background: #0d1117; color: #e6edf3; }
+        .wrap { max-width: 480px; margin: 0 auto; padding: 16px; }
+        .card { background: #161b22; border-radius: 14px; padding: 18px; box-shadow: 0 4px 14px rgba(0,0,0,.4); }
+        h1 { margin: 0 0 4px; font-size: 1.5rem; color: #00cba9; }
+        .sub { margin: 0 0 14px; color: #8b949e; }
+        .foto { width: 100%; border-radius: 10px; margin-bottom: 14px; display: block; }
+        dl { margin: 0; }
+        .fila { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid #21262d; }
+        .fila:last-child { border-bottom: 0; }
+        dt { color: #8b949e; }
+        dd { margin: 0; font-weight: 600; text-align: right; }
+        h2 { font-size: 1.1rem; margin: 22px 0 8px; color: #00cba9; }
+        .evento { padding: 8px 0; border-bottom: 1px solid #21262d; }
+        .evento small { color: #8b949e; display: block; }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <div class="card">
+        {% if ganado.foto %}
+            <img class="foto" src="{{ foto_url(ganado.foto) }}" alt="Foto de {{ ganado.identificacion }}">
+        {% endif %}
+
+        <h1>🐂 {{ ganado.identificacion }}</h1>
+        <p class="sub">{{ ganado.nombre or 'Sin nombre' }}</p>
+
+        {% set m = ganado.edad or 0 %}
+        <dl>
+            <div class="fila"><dt>Tipo</dt><dd>{{ ganado.tipo_animal.nombre }}</dd></div>
+            <div class="fila"><dt>Sexo</dt><dd>{{ ganado.sexo }}</dd></div>
+            <div class="fila"><dt>Nacimiento</dt><dd>{{ ganado.fecha_nacimiento.strftime('%d/%m/%Y') }}</dd></div>
+            <div class="fila"><dt>Edad</dt>
+                <dd>
+                    {% if m >= 12 %}{{ m // 12 }} año{{ 's' if m // 12 != 1 }}{% if m % 12 %} y {{ m % 12 }} mes{{ 'es' if m % 12 != 1 }}{% endif %}
+                    {% else %}{{ m }} mes{{ 'es' if m != 1 }}{% endif %}
+                </dd>
+            </div>
+            <div class="fila"><dt>Finca</dt><dd>{{ ganado.finca.nombre }}</dd></div>
+        </dl>
+
+        {% if ganado.eventos %}
+            <h2>Historial</h2>
+            {% for e in ganado.eventos|sort(attribute='fecha_evento', reverse=true) %}
+                <div class="evento">
+                    <strong>{{ e.tipo|replace('_', ' ')|capitalize }}</strong>
+                    <small>{{ e.fecha_evento.strftime('%d/%m/%Y') }}</small>
+                    {{ e.descripcion }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+</div>
+</body>
+</html>

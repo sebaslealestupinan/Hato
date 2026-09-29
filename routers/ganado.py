@@ -1,6 +1,11 @@
+import io
+import os
 from datetime import date
+from uuid import UUID
 
+import qrcode
 from fastapi import APIRouter, Request, Depends, HTTPException, UploadFile, File, Form
+from fastapi.responses import StreamingResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -23,6 +28,11 @@ def _error_integridad(e: IntegrityError, identificacion: str | None = None) -> H
     if codigo == "23514":
         return HTTPException(400, "Datos inválidos: revisa el sexo y que la fecha de nacimiento no sea futura.")
     return HTTPException(400, "Error de integridad de datos.")
+
+
+def _base_url(request: Request) -> str:
+    """URL pública que va dentro del QR. En Render se define BASE_URL en las variables de entorno."""
+    return (os.getenv("BASE_URL") or str(request.base_url)).rstrip("/")
 
 
 # ============================================================
@@ -68,6 +78,32 @@ async def detalle_ganado_view(ganado_id: int, request: Request, db: Session = De
     return templates.TemplateResponse(
         "ganado/detalle_ganado.html", {"request": request, "ganado": ganado}
     )
+
+
+@router.get("/ficha/{codigo}")
+async def ficha_publica_view(codigo: UUID, request: Request, db: Session = Depends(get_db)):
+    """Ficha que se abre al escanear el QR. Se busca por codigo_publico, no por id."""
+    ganado = db.query(models.Ganado).filter(models.Ganado.codigo_publico == codigo).first()
+    if not ganado:
+        raise HTTPException(status_code=404, detail="Ficha no encontrada")
+    return templates.TemplateResponse(
+        "ganado/ficha_publica.html", {"request": request, "ganado": ganado}
+    )
+
+
+@router.get("/qr/{codigo}")
+def qr_animal(codigo: UUID, request: Request, db: Session = Depends(get_db)):
+    """Imagen PNG del QR de un animal."""
+    existe = db.query(models.Ganado.id).filter(models.Ganado.codigo_publico == codigo).first()
+    if not existe:
+        raise HTTPException(status_code=404, detail="Animal no encontrado")
+
+    url = f"{_base_url(request)}/ganado/ficha/{codigo}"
+    img = qrcode.make(url, box_size=10, border=2)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+    return StreamingResponse(buf, media_type="image/png")
 
 
 # ============================================================
