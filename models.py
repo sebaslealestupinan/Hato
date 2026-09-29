@@ -38,14 +38,19 @@ class Ganado(Base):
     sexo = Column(String(10), nullable=False)
     raza = Column(String(80), nullable=True)
     fecha_nacimiento = Column(Date, nullable=False)
+    estado = Column(String(25), nullable=False, default="Activo")
     finca_id = Column(BigInteger, ForeignKey("fincas.id"), nullable=False)
     tipo_animal_id = Column(BigInteger, ForeignKey("tipos_animales.id"), nullable=False)
+    madre_id = Column(BigInteger, ForeignKey("animales.id"), nullable=True)
+    padre_id = Column(BigInteger, ForeignKey("animales.id"), nullable=True)
     foto = Column("foto_path", Text, nullable=True)
     fecha_registro = Column("created_at", DateTime(timezone=True), server_default=func.now())
 
     finca = relationship("Finca", back_populates="ganados")
     tipo_animal = relationship("TipoAnimal", back_populates="ganados")
-    eventos = relationship("EventoAnimal", back_populates="animal", cascade="all, delete-orphan")
+    madre = relationship("Ganado", foreign_keys=[madre_id], remote_side=[id])
+    padre = relationship("Ganado", foreign_keys=[padre_id], remote_side=[id])
+    eventos = relationship("EventoAnimal", back_populates="animal", cascade="all, delete-orphan", order_by="desc(EventoAnimal.fecha_evento)")
 
     @property
     def edad(self):

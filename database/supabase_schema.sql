@@ -47,9 +47,12 @@ create table if not exists public.animales (
     sexo             text not null check (sexo in ('Macho','Hembra')),
     raza             varchar(80),
     fecha_nacimiento date not null check (fecha_nacimiento <= current_date),
+    estado           text not null default 'Activo' check (estado in ('Activo','Vendido','Fallecido','Descarte','Cuarentena')),
 
     finca_id         bigint not null references public.fincas(id) on delete cascade,
     tipo_animal_id   bigint not null references public.tipos_animales(id) on delete restrict,
+    madre_id         bigint references public.animales(id) on delete set null,
+    padre_id         bigint references public.animales(id) on delete set null,
 
     -- Ruta del archivo dentro del bucket (NO la URL). Ej: 3/17/foto.jpg
     foto_path        text,
@@ -63,13 +66,14 @@ create table if not exists public.animales (
 
 create index if not exists idx_animales_finca  on public.animales (finca_id);
 create index if not exists idx_animales_tipo   on public.animales (tipo_animal_id);
+create index if not exists idx_animales_estado on public.animales (estado);
 
 -- Historial de controles y novedades (vacunas, tratamientos, pesajes, etc.)
 create table if not exists public.eventos_animal (
     id             bigint generated always as identity primary key,
     animal_id      bigint not null references public.animales(id) on delete cascade,
     tipo           text not null
-                   check (tipo in ('vacuna','tratamiento','control_veterinario','pesaje','novedad')),
+                   check (tipo in ('vacunacion','desparasitacion','tratamiento','parto','inseminacion','novedad','vacuna','control_veterinario','pesaje')),
     descripcion    text not null,
     fecha_evento   date not null default current_date,
     proximo_control date,                      -- base para alertas
