@@ -26,16 +26,16 @@
                 <div class="icon-container"><i class="fa-solid fa-pen-to-square"></i></div>
                 <input type="text" id="nombre" placeholder="Nombre (opcional)">
             </div>
-            
+
+            <label for="raza">Raza:</label>
+            <div class="input-group">
+                <div class="icon-container"><i class="fa-solid fa-dna"></i></div>
+                <input type="text" id="raza" placeholder="Raza (ej. Brahman, Holstein, Angus...)">
+            </div>
+
             <label for="fechaNacimiento">Fecha de Nacimiento:</label>
             <div class="input-group">
                 <input type="date" id="fechaNacimiento" required> 
-            </div>
-
-            <label for="edad">Edad (en meses):</label>
-            <div class="input-group">
-                <div class="icon-container"><i class="fa-solid fa-clock"></i></div>
-                <input type="number" id="edad" placeholder="Edad en meses" required min="0">
             </div>
 
             <label for="sexo">Sexo:</label>
@@ -46,7 +46,18 @@
                     <option value="Hembra">Hembra</option>
                 </select>
             </div>
-            
+
+            <label for="estado">Estado del Animal:</label>
+            <div class="input-group select-wrapper">
+                <select id="estado" required>
+                    <option value="Activo" selected>Activo</option>
+                    <option value="Vendido">Vendido</option>
+                    <option value="Fallecido">Fallecido/Muerto</option>
+                    <option value="Descarte">Descarte</option>
+                    <option value="Cuarentena">Cuarentena</option>
+                </select>
+            </div>
+
             <label for="finca">Finca Asignada:</label>
             <div class="input-group select-wrapper"> 
                 <select id="finca" required>
@@ -65,6 +76,34 @@
                         <option value="{{ tipo.id }}">{{ tipo.nombre }}</option>
                     {% endfor %}
                 </select>
+            </div>
+
+            <!-- Genealogía -->
+            <label for="madre_id">Madre (Hembra):</label>
+            <div class="input-group select-wrapper">
+                <select id="madre_id">
+                    <option value="">-- Sin madre registrada / Desconocida --</option>
+                    {% for h in hembras %}
+                        <option value="{{ h.id }}">{{ h.identificacion }} {% if h.nombre %}({{ h.nombre }}){% endif %}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <label for="padre_id">Padre (Macho):</label>
+            <div class="input-group select-wrapper">
+                <select id="padre_id">
+                    <option value="">-- Sin padre registrado / Desconocido --</option>
+                    {% for m in machos %}
+                        <option value="{{ m.id }}">{{ m.identificacion }} {% if m.nombre %}({{ m.nombre }}){% endif %}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Registro Sanitario al Nacer -->
+            <label for="aplico_droga_nacimiento">Medicamentos / Drogas aplicadas al nacer:</label>
+            <div class="input-group">
+                <div class="icon-container"><i class="fa-solid fa-syringe"></i></div>
+                <input type="text" id="aplico_droga_nacimiento" placeholder="Ej. Yodo en ombligo, Vitamina ADE, Suero (Opcional)">
             </div>
 
             <div>
@@ -96,11 +135,21 @@ form.addEventListener("submit", async (e) => {
     const formData = new FormData();
     formData.append("identificacion", document.getElementById("identificacion").value.trim());
     formData.append("nombre", document.getElementById("nombre").value.trim() || '');
+    formData.append("raza", document.getElementById("raza").value.trim() || '');
     formData.append("fecha_nacimiento", document.getElementById("fechaNacimiento").value);
     formData.append("sexo", document.getElementById("sexo").value);
-    formData.append("edad", document.getElementById("edad").value);
+    formData.append("estado", document.getElementById("estado").value);
     formData.append("finca_id", document.getElementById("finca").value);
     formData.append("tipo_animal_id", document.getElementById("tipoAnimal").value);
+    
+    const madreId = document.getElementById("madre_id").value;
+    if (madreId) formData.append("madre_id", madreId);
+    
+    const padreId = document.getElementById("padre_id").value;
+    if (padreId) formData.append("padre_id", padreId);
+    
+    const drogaNacimiento = document.getElementById("aplico_droga_nacimiento").value.trim();
+    if (drogaNacimiento) formData.append("aplico_droga_nacimiento", drogaNacimiento);
 
     const fotoInput = document.getElementById("foto");
     if (fotoInput.files.length > 0) {

@@ -43,17 +43,28 @@ def _base_url(request: Request) -> str:
 async def registrar_ganado_view(request: Request, db: Session = Depends(get_db)):
     fincas = db.query(models.Finca).all()
     tipos_animales = db.query(models.TipoAnimal).all()
+    hembras = db.query(models.Ganado).filter(models.Ganado.sexo == "Hembra").order_by(models.Ganado.identificacion).all()
+    machos = db.query(models.Ganado).filter(models.Ganado.sexo == "Macho").order_by(models.Ganado.identificacion).all()
     return templates.TemplateResponse(
         "ganado/registrar_ganado.html",
-        {"request": request, "fincas": fincas, "tipos_animales": tipos_animales},
+        {
+            "request": request,
+            "fincas": fincas,
+            "tipos_animales": tipos_animales,
+            "hembras": hembras,
+            "machos": machos,
+        },
     )
 
 
 @router.get("/lista")
 async def listar_ganado_view(request: Request, db: Session = Depends(get_db)):
     ganados = db.query(models.Ganado).order_by(models.Ganado.id).all()
+    fincas = db.query(models.Finca).all()
+    tipos_animales = db.query(models.TipoAnimal).all()
     return templates.TemplateResponse(
-        "ganado/lista_ganado.html", {"request": request, "ganados": ganados}
+        "ganado/lista_ganado.html",
+        {"request": request, "ganados": ganados, "fincas": fincas, "tipos_animales": tipos_animales}
     )
 
 
@@ -64,9 +75,18 @@ async def editar_ganado_view(ganado_id: int, request: Request, db: Session = Dep
         raise HTTPException(status_code=404, detail="Ganado no encontrado")
     fincas = db.query(models.Finca).all()
     tipos_animales = db.query(models.TipoAnimal).all()
+    hembras = db.query(models.Ganado).filter(models.Ganado.sexo == "Hembra", models.Ganado.id != ganado_id).order_by(models.Ganado.identificacion).all()
+    machos = db.query(models.Ganado).filter(models.Ganado.sexo == "Macho", models.Ganado.id != ganado_id).order_by(models.Ganado.identificacion).all()
     return templates.TemplateResponse(
         "ganado/editar_ganado.html",
-        {"request": request, "ganado": ganado, "fincas": fincas, "tipos_animales": tipos_animales},
+        {
+            "request": request,
+            "ganado": ganado,
+            "fincas": fincas,
+            "tipos_animales": tipos_animales,
+            "hembras": hembras,
+            "machos": machos,
+        },
     )
 
 
@@ -116,9 +136,13 @@ async def crear_ganado(
     nombre: str | None = Form(None),
     fecha_nacimiento: date = Form(...),
     sexo: str = Form(...),
+    raza: str | None = Form(None),
+    estado: str = Form("Activo"),
     finca_id: int = Form(...),
     tipo_animal_id: int = Form(...),
-    edad: int | None = Form(None),  # ya no se guarda: se calcula desde la fecha de nacimiento
+    madre_id: int | None = Form(None),
+    padre_id: int | None = Form(None),
+    aplico_droga_nacimiento: str | None = Form(None),
     foto: UploadFile | None = File(None),
     db: Session = Depends(get_db),
 ):
@@ -128,8 +152,12 @@ async def crear_ganado(
         nombre=(nombre or "").strip() or None,
         fecha_nacimiento=fecha_nacimiento,
         sexo=sexo,
+        raza=(raza or "").strip() or None,
+        estado=estado or "Activo",
         finca_id=finca_id,
         tipo_animal_id=tipo_animal_id,
+        madre_id=madre_id if madre_id and madre_id > 0 else None,
+        padre_id=padre_id if padre_id and padre_id > 0 else None,
     )
     db.add(animal)
     try:
@@ -137,6 +165,16 @@ async def crear_ganado(
     except IntegrityError as e:
         db.rollback()
         raise _error_integridad(e, identificacion)
+
+    # Si se especificó droga o medicamento al nacer, se crea un evento automático
+    if aplico_droga_nacimiento and aplico_droga_nacimiento.strip():
+        evento_nacimiento = models.EventoAnimal(
+            animal_id=animal.id,
+            tipo="tratamiento",
+            descripcion=f"Tratamiento / Droga al nacer: {aplico_droga_nacimiento.strip()}",
+            fecha_evento=fecha_nacimiento,
+        )
+        db.add(evento_nacimiento)
 
     ruta = None
     if foto and foto.filename:

@@ -27,6 +27,12 @@
                 <input type="text" id="nombre" placeholder="Nombre (opcional)" 
                        value="{{ ganado.nombre or '' }}">
             </div>
+
+            <div class="input-group">
+                <div class="icon-container"><i class="fa-solid fa-dna"></i></div>
+                <input type="text" id="raza" placeholder="Raza (opcional)" 
+                       value="{{ ganado.raza or '' }}">
+            </div>
             
             <label for="fecha_nacimiento" class="input-label">Fecha de Nacimiento:</label>
             <div class="input-group">
@@ -41,6 +47,18 @@
                 <select id="sexo" required>
                     <option value="Macho" {% if ganado.sexo == 'Macho' %}selected{% endif %}>Macho</option>
                     <option value="Hembra" {% if ganado.sexo == 'Hembra' %}selected{% endif %}>Hembra</option>
+                </select>
+            </div>
+
+            <label for="estado" class="input-label">Estado:</label>
+            <div class="input-group">
+                <div class="icon-container"><i class="fa-solid fa-heart-pulse"></i></div>
+                <select id="estado" required>
+                    <option value="Activo" {% if ganado.estado == 'Activo' %}selected{% endif %}>Activo</option>
+                    <option value="Vendido" {% if ganado.estado == 'Vendido' %}selected{% endif %}>Vendido</option>
+                    <option value="Fallecido" {% if ganado.estado == 'Fallecido' %}selected{% endif %}>Fallecido/Muerto</option>
+                    <option value="Descarte" {% if ganado.estado == 'Descarte' %}selected{% endif %}>Descarte</option>
+                    <option value="Cuarentena" {% if ganado.estado == 'Cuarentena' %}selected{% endif %}>Cuarentena</option>
                 </select>
             </div>
 
@@ -65,6 +83,32 @@
                         <option value="{{ tipo.id }}" 
                                 {% if tipo.id == ganado.tipo_animal_id %}selected{% endif %}>
                             {{ tipo.nombre }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <label for="madre_id" class="input-label">Madre (Hembra):</label>
+            <div class="input-group">
+                <div class="icon-container"><i class="fa-solid fa-venus"></i></div>
+                <select id="madre_id">
+                    <option value="">-- Sin madre / Desconocida --</option>
+                    {% for h in hembras %}
+                        <option value="{{ h.id }}" {% if h.id == ganado.madre_id %}selected{% endif %}>
+                            {{ h.identificacion }} {% if h.nombre %}({{ h.nombre }}){% endif %}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <label for="padre_id" class="input-label">Padre (Macho):</label>
+            <div class="input-group">
+                <div class="icon-container"><i class="fa-solid fa-mars"></i></div>
+                <select id="padre_id">
+                    <option value="">-- Sin padre / Desconocido --</option>
+                    {% for m in machos %}
+                        <option value="{{ m.id }}" {% if m.id == ganado.padre_id %}selected{% endif %}>
+                            {{ m.identificacion }} {% if m.nombre %}({{ m.nombre }}){% endif %}
                         </option>
                     {% endfor %}
                 </select>
@@ -176,13 +220,20 @@
             const ganadoId = document.getElementById('ganado_id').value;
             const feedbackMessage = document.getElementById('feedback-message');
 
+            const madreIdVal = document.getElementById('madre_id').value;
+            const padreIdVal = document.getElementById('padre_id').value;
+
             const datosActualizados = {
                 identificacion: document.getElementById('identificacion').value,
                 nombre: document.getElementById('nombre').value || null,
+                raza: document.getElementById('raza').value || null,
                 fecha_nacimiento: document.getElementById('fecha_nacimiento').value,
                 sexo: document.getElementById('sexo').value,
+                estado: document.getElementById('estado').value,
                 finca_id: parseInt(document.getElementById('finca_id').value),
-                tipo_animal_id: parseInt(document.getElementById('tipo_animal_id').value)
+                tipo_animal_id: parseInt(document.getElementById('tipo_animal_id').value),
+                madre_id: madreIdVal ? parseInt(madreIdVal) : null,
+                padre_id: padreIdVal ? parseInt(padreIdVal) : null
             };
 
             try {
