@@ -279,3 +279,41 @@ def actualizar_ganado(ganado_id: int, datos: schemas.GanadoUpdateData, db: Sessi
 
     db.refresh(ganado)
     return ganado
+
+
+# ============================================================
+#              API EVENTOS / HISTORIAL SANITARIO
+# ============================================================
+
+@router.post("/api/{ganado_id}/eventos", response_model=schemas.EventoAnimal)
+def crear_evento_animal(
+    ganado_id: int,
+    evento_in: schemas.EventoAnimalCreate,
+    db: Session = Depends(get_db)
+):
+    animal = db.query(models.Ganado).filter(models.Ganado.id == ganado_id).first()
+    if not animal:
+        raise HTTPException(status_code=404, detail="Animal no encontrado")
+
+    nuevo_evento = models.EventoAnimal(
+        animal_id=ganado_id,
+        tipo=evento_in.tipo,
+        descripcion=evento_in.descripcion,
+        fecha_evento=evento_in.fecha_evento,
+        proximo_control=evento_in.proximo_control,
+    )
+    db.add(nuevo_evento)
+    db.commit()
+    db.refresh(nuevo_evento)
+    return nuevo_evento
+
+
+@router.delete("/api/eventos/{evento_id}")
+def eliminar_evento_animal(evento_id: int, db: Session = Depends(get_db)):
+    evento = db.query(models.EventoAnimal).filter(models.EventoAnimal.id == evento_id).first()
+    if not evento:
+        raise HTTPException(status_code=404, detail="Evento no encontrado")
+
+    db.delete(evento)
+    db.commit()
+    return {"mensaje": "Evento eliminado correctamente"}
