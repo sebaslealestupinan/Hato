@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block head %}
+    <title>Árbol Genealógico: {{ ganado.identificacion }}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/styles.css"> 
+{% endblock %}
+
+{% block content %}
+<style>
+    .card h1, .card h2, .card h3, .card p {
+        color: white !important;
+    }
+
+    .tree-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 25px 0;
+    }
+
+    .tree-node {
+        background: rgba(0, 0, 0, 0.6);
+        border: 2px solid #00cba9;
+        border-radius: 10px;
+        padding: 12px 20px;
+        text-align: center;
+        color: white;
+        min-width: 160px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    }
+    .tree-node.empty {
+        border-color: #6c757d;
+        color: #aaa;
+    }
+    .tree-node a {
+        color: #00cba9;
+        text-decoration: none;
+        font-weight: bold;
+    }
+
+    .tree-level {
+        display: flex;
+        justify-content: center;
+        gap: 30px;
+        width: 100%;
+        margin-bottom: 20px;
+    }
+
+    .checker-box {
+        background: rgba(0, 0, 0, 0.5);
+        padding: 20px;
+        border-radius: 10px;
+        margin-top: 30px;
+        border: 1px solid #383c45;
+    }
+</style>
+
+<div class="main-container">
+    <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
+            <h1>🌳 Árbol Genealógico (Pedigrí)</h1>
+            <a href="/ganado/detalle/{{ ganado.id }}"><button style="background-color: #6c757d;">🔙 Volver al Detalle</button></a>
+        </div>
+
+        <p style="color: #ccc;">Visualiza los ancestros registrados de este animal para tomar mejores decisiones de cruce y evitar la consanguinidad (endogamia).</p>
+
+        <!-- ÁRBOL VISUAL DE 3 GENERACIONES -->
+        <div class="tree-container">
+            <!-- NIVEL 3: ABUELOS -->
+            <div class="tree-level">
+                <!-- Abuelos Maternos -->
+                <div class="tree-node {% if not (ganado.madre and ganado.madre.madre) %}empty{% endif %}">
+                    <small>Abuela Materna</small><br>
+                    {% if ganado.madre and ganado.madre.madre %}
+                        <a href="/ganado/detalle/{{ ganado.madre.madre.id }}">♀ {{ ganado.madre.madre.identificacion }}</a>
+                    {% else %}
+                        <span>Sin registro</span>
+                    {% endif %}
+                </div>
+
+                <div class="tree-node {% if not (ganado.madre and ganado.madre.padre) %}empty{% endif %}">
+                    <small>Abuelo Materno</small><br>
+                    {% if ganado.madre and ganado.madre.padre %}
+                        <a href="/ganado/detalle/{{ ganado.madre.padre.id }}">♂ {{ ganado.madre.padre.identificacion }}</a>
+                    {% else %}
+                        <span>Sin registro</span>
+                    {% endif %}
+                </div>
+
+                <!-- Abuelos Paternos -->
+                <div class="tree-node {% if not (ganado.padre and ganado.padre.madre) %}empty{% endif %}">
+                    <small>Abuela Paterna</small><br>
+                    {% if ganado.padre and ganado.padre.madre %}
+                        <a href="/ganado/detalle/{{ ganado.padre.madre.id }}">♀ {{ ganado.padre.madre.identificacion }}</a>
+                    {% else %}
+                        <span>Sin registro</span>
+                    {% endif %}
+                </div>
+
+                <div class="tree-node {% if not (ganado.padre and ganado.padre.padre) %}empty{% endif %}">
+                    <small>Abuelo Paterno</small><br>
+                    {% if ganado.padre and ganado.padre.padre %}
+                        <a href="/ganado/detalle/{{ ganado.padre.padre.id }}">♂ {{ ganado.padre.padre.identificacion }}</a>
+                    {% else %}
+                        <span>Sin registro</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- NIVEL 2: PADRES -->
+            <div class="tree-level">
+                <div class="tree-node {% if not ganado.madre %}empty{% endif %}" style="min-width: 220px; border-width: 3px;">
+                    <small>Madre ♀</small><br>
+                    {% if ganado.madre %}
+                        <a href="/ganado/detalle/{{ ganado.madre.id }}" style="font-size: 1.1em;">{{ ganado.madre.identificacion }} {% if ganado.madre.nombre %}({{ ganado.madre.nombre }}){% endif %}</a><br>
+                        <small style="color: #aaa;">Raza: {{ ganado.madre.raza or 'N/A' }}</small>
+                    {% else %}
+                        <span>Sin registro</span>
+                    {% endif %}
+                </div>
+
+                <div class="tree-node {% if not ganado.padre %}empty{% endif %}" style="min-width: 220px; border-width: 3px;">
+                    <small>Padre ♂</small><br>
+                    {% if ganado.padre %}
+                        <a href="/ganado/detalle/{{ ganado.padre.id }}" style="font-size: 1.1em;">{{ ganado.padre.identificacion }} {% if ganado.padre.nombre %}({{ ganado.padre.nombre }}){% endif %}</a><br>
+                        <small style="color: #aaa;">Raza: {{ ganado.padre.raza or 'N/A' }}</small>
+                    {% else %}
+                        <span>Sin registro</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- NIVEL 1: ANIMAL PROTAGONISTA -->
+            <div class="tree-node" style="min-width: 280px; border-color: #ffc107; border-width: 4px; background: rgba(255,193,7,0.15);">
+                <span style="font-size: 1.2em; font-weight: bold; color: #ffc107;">🐂 {{ ganado.identificacion }}</span>
+                {% if ganado.nombre %}<br><span style="color:#eee;">({{ ganado.nombre }})</span>{% endif %}
+                <br>
+                <small style="color: #ddd;">Sexo: {{ ganado.sexo }} | Raza: {{ ganado.raza or 'N/A' }}</small>
+            </div>
+        </div>
+
+        <!-- VERIFICADOR DE COMPATIBILIDAD DE CRUCE (INBREEDING CHECKER) -->
+        <div class="checker-box">
+            <h2>🧪 Verificador de Compatibilidad de Cruce</h2>
+            <p style="color: #bbb; font-size: 0.9em;">Selecciona una pareja potencial (del sexo opuesto {{ "Macho" if ganado.sexo == "Hembra" else "Hembra" }}) para analizar si existe algún parentesco o consanguinidad entre ellos.</p>
+
+            <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap; margin-top: 15px;">
+                <label style="color: white; font-weight: bold;">Pareja Potencial:</label>
+                <select id="parejaSelect" style="padding: 10px; border-radius: 5px; min-width: 250px;">
+                    <option value="" disabled selected>-- Selecciona un {{ "Macho" if ganado.sexo == "Hembra" else "Hembra" }} --</option>
+                    {% for c in candidatos %}
+                        <option value="{{ c.id }}">{{ c.identificacion }} {% if c.nombre %}({{ c.nombre }}){% endif %} - Raza: {{ c.raza or 'N/A' }}</option>
+                    {% endfor %}
+                </select>
+
+                <button id="btnVerificarCruce" style="background-color: #00cba9; color: #111; font-weight: bold; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+                    🔍 Analizar Compatibilidad
+                </button>
+            </div>
+
+            <div id="resultadoCruceBox" style="display: none; margin-top: 20px; padding: 15px; border-radius: 8px;"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const btnVerificar = document.getElementById("btnVerificarCruce");
+    const parejaSelect = document.getElementById("parejaSelect");
+    const resultadoBox = document.getElementById("resultadoCruceBox");
+
+    btnVerificar.addEventListener("click", async () => {
+        const parejaId = parejaSelect.value;
+        if (!parejaId) {
+            alert("Por favor selecciona una pareja potencial.");
+            return;
+        }
+
+        const ganadoId = {{ ganado.id }};
+        const res = await fetch(`/ganado/api/${ganadoId}/verificar-cruce/${parejaId}`);
+        if (res.ok) {
+            const data = await res.json();
+            resultadoBox.style.display = "block";
+            resultadoBox.innerHTML = `<strong>${data.motivo}</strong>`;
+
+            if (data.compatible) {
+                resultadoBox.style.background = "rgba(40, 167, 69, 0.2)";
+                resultadoBox.style.border = "1px solid #28a745";
+                resultadoBox.style.color = "#28a745";
+            } else {
+                resultadoBox.style.background = "rgba(220, 53, 69, 0.2)";
+                resultadoBox.style.border = "1px solid #dc3545";
+                resultadoBox.style.color = "#ff6b6b";
+            }
+        } else {
+            alert("Error al verificar la compatibilidad de cruce.");
+        }
+    });
+</script>
+{% endblock %}

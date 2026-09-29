@@ -317,3 +317,100 @@ def eliminar_evento_animal(evento_id: int, db: Session = Depends(get_db)):
     db.delete(evento)
     db.commit()
     return {"mensaje": "Evento eliminado correctamente"}
+
+
+# ============================================================
+#         GENEALOGÍA Y VERIFICACIÓN DE CONSANGUINIDAD
+# ============================================================
+
+def _obtener_ancestros_set(animal, db, visitados=None):
+    if visitados is None:
+        visitados = set()
+    if not animal:
+        return visitados
+    if animal.madre_id and animal.madre_id not in visitados:
+        visitados.add(animal.madre_id)
+        if animal.madre:
+            _obtener_ancestros_set(animal.madre, db, visitados)
+    if animal.padre_id and animal.padre_id not in visitados:
+        visitados.add(animal.padre_id)
+        if animal.padre:
+            _obtener_ancestros_set(animal.padre, db, visitados)
+    return visitados
+
+
+@router.get("/genealogia/{ganado_id}")
+async def genealogia_view(ganado_id: int, request: Request, db: Session = Depends(get_db)):
+    ganado = db.query(models.Ganado).filter(models.Ganado.id == ganado_id).first()
+    if not ganado:
+        raise HTTPException(status_code=404, detail="Animal no encontrado")
+
+    sexo_opuesto = "Macho" if ganado.sexo == "Hembra" else "Hembra"
+    candidatos = db.query(models.Ganado).filter(
+        models.Ganado.sexo == sexo_opuesto,
+        models.Ganado.id != ganado_id
+    ).order_by(models.Ganado.identificacion).all()
+
+    return templates.TemplateResponse(
+        "ganado/genealogia.html",
+        {
+            "request": request,
+            "ganado": ganado,
+            "candidatos": candidatos
+        }
+    )
+
+
+@router.get("/api/{ganado_id}/verificar-cruce/{pareja_id}")
+def verificar_cruce_api(ganado_id: int, pareja_id: int, db: Session = Depends(get_db)):
+    a1 = db.query(models.Ganado).filter(models.Ganado.id == ganado_id).first()
+    a2 = db.query(models.Ganado).filter(models.Ganado.id == pareja_id).first()
+
+    if not a1 or not a2:
+        raise HTTPException(status_code=404, detail="Uno de los animales no fue encontrado")
+
+    if a1.id == a2.id:
+        return {"compatible": False, "motivo": "Es el mismo animal."}
+
+    if a1.sexo == a2.sexo:
+        return {"compatible": False, "motivo": f"Ambos animales son del mismo sexo ({a1.sexo})."}
+
+    # Verificación directa Padre/Madre <-> Hijo/Hija
+    if a1.madre_id == a2.id or a1.padre_id == a2.id:
+        return {"compatible": False, "motivo": f"🔴 CONSANGUINIDAD DIRECTA: El animal {a2.identificacion} es progenitor directo de {a1.identificacion}."}
+
+    if a2.madre_id == a1.id or a2.padre_id == a1.id:
+        return {"compatible": False, "motivo": f"🔴 CONSANGUINIDAD DIRECTA: El animal {a1.identificacion} es progenitor directo de {a2.identificacion}."}
+
+    # Hermanos de sangre o medio hermanos
+    if a1.madre_id and a1.madre_id == a2.madre_id:
+        madre_name = a1.madre.identificacion if a1.madre else f"ID {a1.madre_id}"
+        return {"compatible": False, "motivo": f"🔴 HERMANOS DE MADRE: Comparten la misma madre ({madre_name})."}
+
+    if a1.padre_id and a1.padre_id == a2.padre_id:
+        padre_name = a1.padre.identificacion if a1.padre else f"ID {a1.padre_id}"
+        return {"compatible": False, "motivo": f"🔴 HERMANOS DE PADRE: Comparten el mismo padre ({padre_name})."}
+
+    # Ancestros comunes (abuelos, bisabuelos, etc.)
+    ancestros_a1 = _obtener_ancestros_set(a1, db)
+    ancestros_a2 = _obtener_ancestros_set(a2, db)
+
+    if a1.id in ancestros_a2:
+        return {"compatible": False, "motivo": f"🔴 ANCESTRO DIRECTO: El animal {a1.identificacion} es ancestro de {a2.identificacion}."}
+
+    if a2.id in ancestros_a1:
+        return {"compatible": False, "motivo": f"🔴 ANCESTRO DIRECTO: El animal {a2.identificacion} es ancestro de {a1.identificacion}."}
+
+    comunes = ancestros_a1.intersection(ancestros_a2)
+    if comunes:
+        animales_comunes = db.query(models.Ganado).filter(models.Ganado.id.in_(comunes)).all()
+        nombres_comunes = ", ".join([f"{a.identificacion} ({a.nombre or 'sin nombre'})" for a in animales_comunes])
+        return {
+            "compatible": False,
+            "motivo": f"⚠️ CONSANGUINIDAD DETECTADA: Comparten ancestros en común ({nombres_comunes}). Riesgo de endogamia."
+        }
+
+    return {
+        "compatible": True,
+        "motivo": "✅ CRUCE COMPATIBLE: No se detectaron ancestros en común (madres, padres o abuelos)."
+    }
