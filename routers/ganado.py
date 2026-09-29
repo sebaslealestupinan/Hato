@@ -178,7 +178,52 @@ def eliminar_ganado(ganado_id: int, db: Session = Depends(get_db)):
     storage.borrar_foto(ruta)  # borra también la foto del bucket
     return {"mensaje": "Ganado eliminado correctamente"}
 
+@router.put("/api/{ganado_id}/foto", response_model=schemas.Ganado)
+async def cambiar_foto(
+    ganado_id: int,
+    foto: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
+    """Sube una foto nueva y reemplaza la anterior (también en el bucket)."""
+    ganado = db.query(models.Ganado).filter(models.Ganado.id == ganado_id).first()
+    if not ganado:
+        raise HTTPException(status_code=404, detail="Ganado no encontrado")
 
+    try:
+        nueva_ruta = await storage.subir_foto(ganado.finca_id, ganado.id, foto)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    except Exception:
+        raise HTTPException(502, "No se pudo subir la foto. Intenta de nuevo.")
+
+    ruta_anterior = ganado.foto
+    ganado.foto = nueva_ruta
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        storage.borrar_foto(nueva_ruta)
+        raise HTTPException(500, "No se pudo guardar la foto.")
+
+    storage.borrar_foto(ruta_anterior)
+    db.refresh(ganado)
+    return ganado
+
+
+@router.delete("/api/{ganado_id}/foto")
+def quitar_foto(ganado_id: int, db: Session = Depends(get_db)):
+    """Quita la foto del animal y la borra del bucket."""
+    ganado = db.query(models.Ganado).filter(models.Ganado.id == ganado_id).first()
+    if not ganado:
+        raise HTTPException(status_code=404, detail="Ganado no encontrado")
+
+    ruta = ganado.foto
+    ganado.foto = None
+    db.commit()
+    storage.borrar_foto(ruta)
+    return {"mensaje": "Foto eliminada correctamente"}
+
+    
 @router.put("/{ganado_id}", response_model=schemas.Ganado)
 def actualizar_ganado(ganado_id: int, datos: schemas.GanadoUpdateData, db: Session = Depends(get_db)):
     ganado = db.query(models.Ganado).filter(models.Ganado.id == ganado_id).first()

@@ -67,10 +67,39 @@
                             {{ tipo.nombre }}
                         </option>
                     {% endfor %}
-                    </select>
+                </select>
             </div>
+
+            <!-- ================= FOTO ================= -->
+            <label for="foto" class="input-label">Foto del animal:</label>
+            <div>
+                <!-- Foto actual -->
+                <div id="fotoActualBox" style="display:none; text-align:center; margin-bottom:10px;">
+                    {% if ganado.foto %}
+                        <img src="{{ foto_url(ganado.foto) }}" alt="Foto actual"
+                             style="max-width:220px; width:100%; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,.3);">
+                    {% endif %}
+                </div>
+
+                <p id="sinFoto" style="display:none; color:#8b949e; margin:6px 0;">Este animal no tiene foto.</p>
+                <p id="notaQuitar" style="display:none; color:#dc3545; margin:6px 0;">La foto se eliminará al guardar los cambios.</p>
+
+                <!-- Foto nueva (vista previa) -->
+                <div id="fotoNuevaBox" style="display:none; text-align:center; margin-bottom:10px;">
+                    <img id="fotoNuevaImg" alt="Foto nueva"
+                         style="max-width:220px; width:100%; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,.3);">
+                    <p style="margin:6px 0; color:#28a745;">Foto nueva (se guardará al presionar "Guardar Cambios")</p>
+                </div>
+
+                <input type="file" id="foto" accept="image/*">
+
+                <button type="button" id="btnQuitarFoto"
+                        style="display:none; margin-top:8px; background-color:#dc3545; color:#fff; border:0; padding:8px 12px; border-radius:6px; cursor:pointer;">
+                </button>
+            </div>
+            <!-- ======================================== -->
             
-            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-save"></i> Guardar Cambios</button>
+            <button type="submit" class="btn btn-primary" style="margin-top:15px;"><i class="fa-solid fa-save"></i> Guardar Cambios</button>
             <p id="feedback-message" style="margin-top: 15px;"></p>
         </form>
 
@@ -79,49 +108,127 @@
 
 {% block scripts %}
     <script>
-        // JS para manejar la solicitud PUT (Actualización)
+        // ---------- Estado de la foto ----------
+        const tieneActual = {{ 'true' if ganado.foto else 'false' }};
+        let quitarActual = false;
+
+        const inputFoto    = document.getElementById('foto');
+        const boxActual    = document.getElementById('fotoActualBox');
+        const boxNueva     = document.getElementById('fotoNuevaBox');
+        const imgNueva     = document.getElementById('fotoNuevaImg');
+        const notaQuitar   = document.getElementById('notaQuitar');
+        const sinFoto      = document.getElementById('sinFoto');
+        const btnQuitar    = document.getElementById('btnQuitarFoto');
+
+        function liberarPreview() {
+            if (imgNueva.src && imgNueva.src.startsWith('blob:')) URL.revokeObjectURL(imgNueva.src);
+            imgNueva.removeAttribute('src');
+        }
+
+        function render() {
+            const hayNueva = inputFoto.files.length > 0;
+
+            boxActual.style.display  = (tieneActual && !quitarActual && !hayNueva) ? 'block' : 'none';
+            boxNueva.style.display   = hayNueva ? 'block' : 'none';
+            notaQuitar.style.display = (tieneActual && quitarActual && !hayNueva) ? 'block' : 'none';
+            sinFoto.style.display    = (!tieneActual && !hayNueva) ? 'block' : 'none';
+
+            if (hayNueva) {
+                btnQuitar.style.display = 'inline-block';
+                btnQuitar.textContent = '✖ Descartar foto nueva';
+            } else if (tieneActual && !quitarActual) {
+                btnQuitar.style.display = 'inline-block';
+                btnQuitar.textContent = '✖ Quitar foto';
+            } else if (tieneActual && quitarActual) {
+                btnQuitar.style.display = 'inline-block';
+                btnQuitar.textContent = '↩ Conservar foto';
+            } else {
+                btnQuitar.style.display = 'none';
+            }
+        }
+
+        inputFoto.addEventListener('change', () => {
+            liberarPreview();
+            const archivo = inputFoto.files[0];
+            if (archivo) {
+                imgNueva.src = URL.createObjectURL(archivo);
+                quitarActual = false;  // una foto nueva reemplaza la actual
+            }
+            render();
+        });
+
+        btnQuitar.addEventListener('click', () => {
+            if (inputFoto.files.length > 0) {
+                inputFoto.value = '';      // descarta la foto nueva
+                liberarPreview();
+            } else if (tieneActual) {
+                quitarActual = !quitarActual;  // marca / desmarca quitar la actual
+            }
+            render();
+        });
+
+        render();
+
+        // ---------- Guardar cambios ----------
         document.getElementById('editarGanadoForm').addEventListener('submit', async function(event) {
             event.preventDefault();
             
             const ganadoId = document.getElementById('ganado_id').value;
-            const identificacion = document.getElementById('identificacion').value;
-            const nombre = document.getElementById('nombre').value;
-            const fechaNacimiento = document.getElementById('fecha_nacimiento').value;
-            const sexo = document.getElementById('sexo').value;
-            const fincaId = document.getElementById('finca_id').value;
-            const tipoAnimalId = document.getElementById('tipo_animal_id').value;
             const feedbackMessage = document.getElementById('feedback-message');
 
             const datosActualizados = {
-                identificacion: identificacion,
-                nombre: nombre || null, // Envía null si el nombre está vacío
-                fecha_nacimiento: fechaNacimiento,
-                sexo: sexo,
-                finca_id: parseInt(fincaId),
-                tipo_animal_id: parseInt(tipoAnimalId)
+                identificacion: document.getElementById('identificacion').value,
+                nombre: document.getElementById('nombre').value || null,
+                fecha_nacimiento: document.getElementById('fecha_nacimiento').value,
+                sexo: document.getElementById('sexo').value,
+                finca_id: parseInt(document.getElementById('finca_id').value),
+                tipo_animal_id: parseInt(document.getElementById('tipo_animal_id').value)
             };
 
             try {
-                // Envía la petición PUT a /ganado/{ganadoId}
+                // 1) Datos del animal
                 const response = await fetch(`/ganado/${ganadoId}`, {
                     method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(datosActualizados)
                 });
-
                 const result = await response.json();
 
-                if (response.ok) {
-                    feedbackMessage.textContent = '✅ Animal actualizado correctamente.';
-                    feedbackMessage.style.color = '#28a745';
-                    // Opcional: Redirigir al listado después de un breve momento
-                    // setTimeout(() => { window.location.href = '/ganado/lista'; }, 1500);
-                } else {
-                    // Muestra el error específico del servidor (ej. error de unicidad)
+                if (!response.ok) {
                     feedbackMessage.textContent = `❌ Error: ${result.detail || 'No se pudo actualizar el animal.'}`;
                     feedbackMessage.style.color = '#dc3545';
+                    return;
+                }
+
+                // 2) Foto (solo si cambió algo)
+                let fotoCambio = false;
+                if (inputFoto.files.length > 0) {
+                    const fd = new FormData();
+                    fd.append('foto', inputFoto.files[0]);
+                    const r = await fetch(`/ganado/api/${ganadoId}/foto`, { method: 'PUT', body: fd });
+                    if (!r.ok) {
+                        const err = await r.json();
+                        feedbackMessage.textContent = `⚠️ Datos guardados, pero la foto falló: ${err.detail || 'error desconocido'}`;
+                        feedbackMessage.style.color = '#dc3545';
+                        return;
+                    }
+                    fotoCambio = true;
+                } else if (tieneActual && quitarActual) {
+                    const r = await fetch(`/ganado/api/${ganadoId}/foto`, { method: 'DELETE' });
+                    if (!r.ok) {
+                        feedbackMessage.textContent = '⚠️ Datos guardados, pero no se pudo quitar la foto.';
+                        feedbackMessage.style.color = '#dc3545';
+                        return;
+                    }
+                    fotoCambio = true;
+                }
+
+                feedbackMessage.textContent = '✅ Animal actualizado correctamente.';
+                feedbackMessage.style.color = '#28a745';
+
+                // Si cambió la foto, recargamos para ver el resultado
+                if (fotoCambio) {
+                    setTimeout(() => window.location.reload(), 1200);
                 }
             } catch (error) {
                 console.error('Error de red:', error);
